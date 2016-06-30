@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+    <widget xmlns   = "http://www.w3.org/ns/widgets"
+        xmlns:gap   = "http://phonegap.com/ns/1.0"
+        id          = "a"
+        versionCode = "10" 
+        version     = "1.0.0" >
+
+    <!-- versionCode is optional and Android only -->
+
+    <name>PhoneGap Example</name>
+
+    <description>
+        App Android Proyecto Lenguajes 
+    </description>
+
+    <author href="https://www.facebook.com/dilearmo" email="dilearmo@hotmail.com">
+        Diego Leonardo Arias Mora 
+    </author>
+
+    <gap:plugin name="cordova-plugin-whitelist" source="npm" />
+    <access origin="*" />
+    <allow-intent href="*" />
+    <allow-navigation href="*" />
+
+</widget>
