@@ -1,0 +1,53 @@
+
+
+#mensajeError,#mensajeErrorModificar{
+	color: #cc0000;
+}
+#menuPlatos{
+	margin-top: 40px;
+}
+@media only screen and (min-width: 992px){
+	
+	img{
+		width: 120px;
+		float: right;
+	}
+
+	span#nombreRestaurante{
+		font-size: 100px;
+	}
+}
+
+@media only screen and (min-width: 768px) and (max-width:991px) {
+		
+
+	img{
+		width: 90px;
+		float: right;
+	}
+
+	span#nombreRestaurante{
+		font-size: 60px;
+	}
+}
+
+@media only screen and (max-width:767px) {
+
+
+	img{
+		width: 50px;
+		float: right;
+	}
+
+	span#nombreRestaurante{
+		font-size: 30px;
+	}
+}
+
+@media only screen and (max-width:447px) {
+
+	#tituloMenu {
+		margin-top: 5px;
+	}
+
+}
