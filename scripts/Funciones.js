@@ -1,3 +1,33 @@
+function ObtenerDireccion(){
+    x = navigator.geolocation;
+    x.getCurrentPosition(success, failure);
+}
+  
+    function success(position) {
+      var mylat = position.coords.latitude;
+      var mylong = position.coords.longitude;
+      cargar(mylat,mylong);
+    }
+function cargar(latitud,longitud){
+  var req = $.ajax({
+        url: 'http://services.gisgraphy.com/reversegeocoding/search?format=json&lat='+ latitud +'&lng=' + longitud,
+        dataType: "jsonp",
+        timeout: 10000,
+        success: function (datos){ProcesarUbicacion(datos)}
+      });
+}
+
+function failure() {
+      $('#address').html("<p>It didn't work, co-ordinates not available!</p>");
+    }
+
+function ProcesarUbicacion(datos){
+    document.getElementById("address").value = datos.result[0].formatedFull;
+    alert(document.getElementById("address").value + "dir");
+    EnviarPedido();
+}
+
+
 function ValidarAcceso () {
   $(document).on('pagebeforechange', function(e, data){  
                 var to = data.toPage,
@@ -34,8 +64,6 @@ function ValidarAcceso () {
                 }
             });
 }
-
-
 
 function AgregarCliente(){
   var nombre = document.getElementById("txtNombre").value;
@@ -75,12 +103,16 @@ function AgregarCliente(){
 function ValidarCorreo(){
   var correo = document.getElementById("txtCorreo").value;
   var pass = document.getElementById("txtPass").value;
-  var req = $.ajax({
-      url: 'http://ws-restaurante-udata.azurewebsites.net/WSUsuario.svc/UsuarioLogin?correo=' + correo + '&contraseña=' + pass,
-      dataType:"jsonp",
-      timeout: 10000,
-      success: function(datos){ProcesarValidacion(datos)}
-  });
+  if (correo !==  "" && pass !== "") {
+      var req = $.ajax({
+        url: 'http://ws-restaurante-udata.azurewebsites.net/WSUsuario.svc/UsuarioLogin?correo=' + correo + '&contraseña=' + pass,
+        dataType:"jsonp",
+        timeout: 10000,
+        success: function(datos){ProcesarValidacion(datos)}
+    });
+  } else {
+     $('#mensajeError').html("Debe completar los datos");
+  }
 }
 
 function ProcesarValidacion(datos){
@@ -133,7 +165,7 @@ function ProcesarPlatos(datos){
       nuevoA.setAttribute("data-position-to", "window");
       nuevoA.setAttribute("data-transition", "slidedown");
       nuevoA.setAttribute("class","platosPedidos");
-      nuevoA.innerHTML = this.Nombre + " " + this.Precio;
+      nuevoA.innerHTML = this.Nombre + " ₡" + this.Precio;
       nuevoLi.appendChild(nuevoA);
 
        $('#listaPlatos').append(nuevoLi);
@@ -188,9 +220,11 @@ function AgregarPedido(){
   sessionStorage.setItem(idPlato, JSON.stringify(array));
   
   alert("Se ha agregado correctamente el pedido");
+  document.getElementById("cantidadPlatos").value = "1";
 }
 
 function CargarListaDetalles(){
+  document.getElementById("total").value = "0";
   $.mobile.changePage("#pedido");
   $('#listaDetalles').empty();
   var len = sessionStorage.length;
@@ -199,19 +233,18 @@ function CargarListaDetalles(){
     key = sessionStorage.key(i);  
     val = sessionStorage.getItem(key);
     valor = $.parseJSON(val);
-    alert(valor[0]);
     var req = $.ajax({
       url: 'http://ws-restaurante-udata.azurewebsites.net/WSPlatos.svc/InfoPlatoPorId?id=' + valor[0],
       dataType: 'jsonp',
       timeout: 10000,
-      success: function(datos){MostrarDetalle(datos, valor[1])}
+      success: function(datos){MostrarDetalle(datos); $('#listaDetalles').listview('refresh')}
     });
   }
-  $('#listaDetalles').listview('refresh');
 }
 
-
-function MostrarDetalle(datos, cantidad){
+function MostrarDetalle(datos){
+  val = sessionStorage.getItem(datos.IdPlato);
+  valor = $.parseJSON(val);
   var idUsuario = JSON.parse(localStorage["cliente"]).IdUsuario;
   var usuario = document.getElementById("usuarioId");
   usuario.value = idUsuario;
@@ -223,10 +256,17 @@ function MostrarDetalle(datos, cantidad){
   nuevoA.setAttribute("data-rel", "popup");
   nuevoA.setAttribute("data-position-to", "window");
   nuevoA.setAttribute("data-transition", "slidedown");
-  nuevoA.innerText = datos.Nombre + " " + datos.Precio;
+  nuevoA.innerText =  datos.Nombre + "'\t'" + valor[1] + " X ₡" + datos.Precio;
   nuevoA.href = "#popupEliminarPedido";
   nuevoLi.appendChild(nuevoA);
   $('#listaDetalles').append(nuevoLi);
+
+  var totalTemp = parseInt($('#total').val());
+  totalTemp = totalTemp + (parseInt(datos.Precio)) * valor[1];
+
+  document.getElementById("total").value = totalTemp;
+  
+  $('#lbl_total').html("₡" + totalTemp);
 }
 
 function GuardarIdDetalle(id){
@@ -241,10 +281,9 @@ function EliminarDetalle(){
 }
 
 function EnviarPedido(){
-  ObtenerDireccion();
-
   var usuario = document.getElementById("usuarioId").value;
   var direccion = document.getElementById("address").value;
+  alert("esta es la direccion: " + direccion);
   var req = $.ajax({
     url: 'http://ws-restaurante-udata.azurewebsites.net/WSPedido.svc/AgregarPedido?idUsuario='+ usuario + '&direccion=' +direccion,
     dataType: 'jsonp',
@@ -255,7 +294,6 @@ function EnviarPedido(){
 }
 
 function EnviarDetalles(datos){
-  alert();
   var len = sessionStorage.length;
 
   for (var i = 0; i < len; i++) {
@@ -272,7 +310,7 @@ function EnviarDetalles(datos){
   }
 }
 
-
+/*
 function ObtenerDireccion(){
       x = navigator.geolocation;
       x.getCurrentPosition(success, failure);
@@ -309,7 +347,10 @@ function ObtenerDireccion(){
       geocoder.geocode({'latLng': latlng}, function(results, status) {
         if (status == google.maps.GeocoderStatus.OK) {
           if (results[0]) {
-            $('#address').val(results[0].address_components[0].long_name + ", " + results[0].address_components[1].long_name + ", " + results[0].address_components[2].long_name + ", " + results[0].address_components[3].long_name);
+            var lugar = results[0].address_components[0].long_name + ", " + results[0].address_components[1].long_name + ", " + results[0].address_components[2].long_name + ", " + results[0].address_components[3].long_name;
+            document.getElementById("address").value = lugar;
+            alert(document.getElementById("address").value);
+            EnviarPedido();
           } else {
             alert('No results found');
           }
@@ -318,7 +359,7 @@ function ObtenerDireccion(){
         }
       });
     }
-
+*/
 
 function CargarUsuario() {
     var id = JSON.parse(localStorage["cliente"]).IdUsuario;
@@ -360,3 +401,72 @@ function ModificarUsuario(){
         $('#mensajeErrorModificar').html("Debe completar los datos solicitados");
     }
 }
+
+
+
+//facebook 
+/*
+ window.fbAsyncInit = function() {
+                FB.init({
+          appId      : '1729383113970581',
+          xfbml      : true,
+          version    : 'v2.6'
+        });
+      };
+    
+      (function(d, s, id){
+         var js, fjs = d.getElementsByTagName(s)[0];
+         if (d.getElementById(id)) {return;}
+         js = d.createElement(s); js.id = id;
+         js.src = "//connect.facebook.net/en_US/sdk.js";
+         fjs.parentNode.insertBefore(js, fjs);
+       }(document, 'script', 'facebook-jssdk'));
+       
+       
+       function ingresar() {  
+                FB.login(function(response){  
+                    validarUsuario();  
+                }, {scope: 'public_profile, email, user_hometown, user_location'});  
+        }
+        
+        
+        function validarUsuario() {  
+                FB.getLoginStatus(function(response) {  
+                    if(response.status == 'connected') {  
+                        FB.api('/me', {fields: 'id, name, email, first_name, last_name, hometown, location'}, function(response) {  
+                            verificarUsuario(response);
+                            var respuesta="";
+                            for (var i in response.location)
+                            {
+                                respuesta+=i+": "+response.location[i]+"<br>";
+                            }
+                            alert(respuesta);
+                           // alert(response.hometown.name + " " + response.location. + " " + response.location.country + " " + response.location.region + " " + response.location.street);
+                        });  
+                    } else if(response.status == 'not_authorized') {  
+                        alert('Debes autorizar la app!');  
+                    } else {  
+                        ingresar();
+                    }  
+                    
+                });  
+           }  
+       
+       function logout(){
+          FB.logout(function(response) {
+            // user is now logged out
+            });
+       }
+       
+       function verificarUsuario(response){
+           var ima = document.getElementById("imagen");
+            ima.src = "https://graph.facebook.com/" + response.id + "/picture";
+            
+            var urlImagen ="https://graph.facebook.com/" + response.id + "/picture";
+            var correo = response.email;
+            var nombre = response.first_name;
+            var apellidos = response.last_name;
+       }
+
+
+       */
